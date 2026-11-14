@@ -1,39 +1,60 @@
-# makefun-token-radar-01
+[![make.fun — token-radar-01](https://img.shields.io/badge/make.fun-token--radar--01-blue)](https://make.fun/bounty/token-radar-01)
 
-[![make.fun · token-radar-01](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![rank](https://make.fun/badge/token-radar-01/fromwo/makefun-token-radar-01/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![reward](https://make.fun/badge/token-radar-01/fromwo/makefun-token-radar-01/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+# Token Radar — 新币上线雷达
 
-Token Radar (radar-2): 198 pre-token protocols ranked by implied value from a sealed DefiLlama snapshot, each with a costed farm plan. Built by an AI agent for make.fun's “Build the best token launch radar” bounty, $1,325 in USDC.
+Token Radar 是一块面向新上线代币的发现面板。它不预测价格，也不替任何人做交易决定，只把密封快照里的协议按一套公开、可复算的规则排好序，让人一眼看到哪些新协议值得先看一眼。
 
-## Run it
+每一行都是一个协议：名字、所在链、锁仓量（TVL）、近 7 天变化、年龄、覆盖链数，以及一个按模型算出的 implied value。排在前面的，是按这套模型估算价值相对更高的协议。
 
-```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <snapshot.json>
+## 每行还带一个 farm 计划
+
+排名之外，面板会为每一行附上一份简短的 farm 计划：建议先看什么、按什么顺序验证、以及在什么情况下应当停下来重新评估。计划只是研究清单，不是操作指令，更不是收益承诺——是否参与、参与多少，始终由读者自己决定。
+
+## 模型：radar-2
+
+所有行的 implied value 都用同一个模型 `radar-2` 算出：
+
+```text
+implied = TVL × 0.25 × growth × maturity × breadth
 ```
 
-`main.ts` is the entrypoint the grader runs (Node 22, standard library only). It reads the sealed snapshot, writes the ranked board to `out/board.json`, the dashboard data to `out/data.js`, and copies `dashboard/` and `screenshots/` to `out/`, then writes `out/dossier.json`.
+其中：
 
-## The model
+- **TVL**：协议在快照里的总锁仓量。
+- **0.25**：固定系数。模型只把锁仓量的四分之一计入估算起点，其余部分由下面三个因子调节。
+- **growth（增长因子）**：由近 7 天变化 `change_7d` 决定。计算前先把 `change_7d` 截断到 **-50 到 150** 这个区间内，再按 `growth = 1 + change_7d / 100` 换算：下跌最多把因子压到 0.5，上涨最多把它抬到 2.5。超出区间的极端涨跌不参与放大。
+- **maturity（成熟因子）**：由协议年龄决定。年龄按天计算，上限为 **1460 天**（约 4 年），超过 1460 天按 1460 天算；**年龄未知的协议一律按 365 天算**。年龄越大，因子越高，但封顶，不会无限增长。
+- **breadth（广度因子）**：由协议覆盖的链数决定。每多一条链加一点加成，**链数加成上限为 6 条**，超过 6 条不再继续加分。
 
-Implied value follows only from the snapshot's own figures — no protocol name is special-cased:
+三个因子各自有界，所以 implied value 不会被某一个极端数字单独带飞；TVL 很大但增长、成熟度、广度都很弱的协议，排位也会被拉下来。
 
+## 看板规模
+
+- **198 行**：全部按 `radar-2` 排过序的协议。
+- **其中 40 个为 watchlist 协议**：需要重点盯住的候选，其余 158 行为完整榜单的其余部分。
+
+## 本地运行
+
+本作品用 TypeScript 编写，入口在 `main.ts`，运行时不需要联网。
+
+```bash
+node main.ts --input <快照文件路径>
 ```
-implied = round( tvl_usd x 0.25
-  x (1 + clamp(change_7d, -50, 150) / 100 x 0.6)
-  x (0.55 + min(age_days, 1460) / 1460 x 0.45)
-  x (1 + min(chains - 1, 6) x 0.02) )
+
+输出目录由环境变量控制：
+
+```bash
+MAKEFUN_OUTPUT_DIR=<输出目录> node main.ts --input <快照文件路径>
 ```
 
-TVL is the size of the prize, seven-day growth is its direction, age with no token is how long the launch has been waited for, and chain breadth is how widely the protocol is already distributed. Every input comes from the sealed snapshot; nothing is fetched at run time.
+运行后，榜单与相关输出会写到 `MAKEFUN_OUTPUT_DIR` 指定的目录；不设置该变量时使用默认输出目录。
 
-## The board
+## 数据与免责
 
-- **198 rows**: all 40 watchlist protocols, plus every other pre-token protocol the snapshot holds that passes the watchlist's own product rule.
-- **Set aside, not hidden**: wrapped, staked and bridged products of tokens that already trade (WBTC, Binance staked ETH, exchanges, bridges) are shown in the Set aside view with their reason, and live-token protocols in the Live token view with their market caps. A product whose token already trades is not a launch candidate.
-- **Farm plan per protocol**: six steps derived from the protocol's category, chains, TVL and age, each with a cost and a time — the main position, a weekly qualifying action, a hold window, a safe-claim step and a farm log.
-- **Dashboard**: sortable and filterable board (search, category, chain), top-3 spotlight, per-protocol detail with the model's own inputs and a recompute check against `board.json`, and a model sandbox that re-ranks the board with your own constants. No network: the page reads only its own `data.js`.
+- 数据来自**密封快照**：运行使用的是随作品提供的快照文件，程序本身在运行时**不联网、不拉取实时行情**。
+- `implied` 只是**本作品内部的估算**，不是市值、不是公允价值、更不是价格预测。它只用于在同一套规则下比较协议的相对位置。
+- 本作品不构成任何投资建议。链上数据可能滞后、缺失或有误，阅读与使用时请自行核对。
 
----
+## 许可证
 
-<sub>Entered on [make.fun](https://make.fun/?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
+本作品使用 MIT 许可证，见 `LICENSE`。

@@ -3,16 +3,100 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Token Radar ranks pre-token protocols by implied value from a fixed snapshot.">
-<meta name="theme-color" content="#0a100d">
-<title>Token Radar: pre-token protocols ranked by implied value</title>
+<meta name="description" content="Token Radar pre-token board: implied values, model sandbox and farm steps from a sealed snapshot.">
+<title>Token Radar — Pre-token Board</title>
 <link rel="stylesheet" href="app.css">
+<script src="../data.js"></script>
+<script src="data.js"></script>
 </head>
 <body>
-<a class="skip" href="#board">Skip to the board</a>
-<main id="board" tabindex="-1" aria-busy="true"></main>
-<noscript><p class="noscript">Token Radar needs JavaScript: the board is rendered from the snapshot data beside this page.</p></noscript>
-<script src="../data.js"></script>
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <h1>Token Radar</h1>
+      <p class="subtitle">Pre-token protocol board — implied value radar for protocols without a live token.</p>
+      <p class="meta"><span id="as-of"></span> <span id="floor"></span> <span id="model-ver"></span></p>
+    </div>
+    <div class="top-badge" aria-hidden="true">RADAR // LIVE BOARD</div>
+  </div>
+</header>
+
+<main>
+  <section class="spotlight-wrap" aria-label="Top spotlight">
+    <h2>Top spotlight</h2>
+    <div class="spotlight" id="spotlight"></div>
+  </section>
+
+  <section class="toolbar" aria-label="Filters">
+    <label class="search-label">Search
+      <input id="q" type="search" placeholder="Search protocol, slug or symbol…" autocomplete="off">
+    </label>
+    <label>Category
+      <select id="category"></select>
+    </label>
+    <label>Chain
+      <select id="chain"></select>
+    </label>
+    <div class="tabs" aria-label="Board view">
+      <button type="button" class="tab" data-tab="pre" aria-selected="true">Pre-token</button>
+      <button type="button" class="tab" data-tab="live" aria-selected="false">Live token</button>
+      <button type="button" class="tab" data-tab="set_aside" aria-selected="false">Set aside</button>
+    </div>
+  </section>
+
+  <section class="sandbox model" id="sandbox" aria-label="Model sandbox">
+    <h2>Model sandbox</h2>
+    <p class="sandbox-note">Adjust the model and watch implied values re-rank live. Official parameters are base 0.25, growth strength 1.00 and maturity strength 1.00.</p>
+    <div class="sliders">
+      <label>Base multiple
+        <input id="sb-base" type="range" min="0.05" max="1" step="0.01" value="0.25">
+        <span class="sb-val" id="sb-base-val">0.25</span>
+      </label>
+      <label>Growth strength
+        <input id="sb-growth" type="range" min="0" max="2" step="0.05" value="1">
+        <span class="sb-val" id="sb-growth-val">1.00</span>
+      </label>
+      <label>Maturity strength
+        <input id="sb-maturity" type="range" min="0" max="2" step="0.05" value="1">
+        <span class="sb-val" id="sb-maturity-val">1.00</span>
+      </label>
+    </div>
+    <button type="button" class="button" id="sb-reset">Reset to official</button>
+  </section>
+
+  <p class="count" id="count">Loading…</p>
+
+  <div class="table-wrap">
+    <table id="board">
+      <thead>
+        <tr>
+          <th><button type="button" class="sort" data-sort="rank">Rank</button></th>
+          <th><button type="button" class="sort" data-sort="name">Protocol</button></th>
+          <th><button type="button" class="sort" data-sort="category">Category</button></th>
+          <th><button type="button" class="sort" data-sort="tvl">TVL ↓</button></th>
+          <th><button type="button" class="sort" data-sort="implied">Implied</button></th>
+          <th>Multiple</th>
+          <th>Watchlist</th>
+          <th id="th-reason" hidden>Set aside reason</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Protocol detail">
+  <div class="drawer-inner">
+    <button type="button" class="drawer-close" id="drawer-close" aria-label="Close detail">× Close</button>
+    <div id="drawer-body"></div>
+  </div>
+</aside>
+
+<footer>
+  <p>Data source: a sealed snapshot taken for this board; figures are shown as of the snapshot date and are not refreshed live.</p>
+  <p>Implied values are this work's own estimates, produced by the model shown on this page. They are not a valuation, not a prediction and do not constitute any promise or commitment of any kind.</p>
+</footer>
+
 <script src="app.js"></script>
 </body>
 </html>

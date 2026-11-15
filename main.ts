@@ -9,17 +9,19 @@ import { buildDossier } from './vendor/makefun-board.ts';
 import { BASE_MULTIPLE, MODEL_VERSION, buildBoard, type SnapshotInput } from './lib/model.ts';
 
 const TEXT_MAX_BYTES = 65536;
-const SCREENSHOT_MAX = 8;
-const SCREENSHOT_MAX_BYTES = 4194304;
+const SCREENSHOT_MAX = 4;
+const SCREENSHOT_MAX_BYTES = 524288;
 const DASHBOARD_MAX_FILES = 400;
 const DASHBOARD_MAX_BYTES = 4194304;
 
 function inputPathFrom(argv: string[]): string {
   const at = argv.indexOf('--input');
-  if (at === -1 || at + 1 >= argv.length) {
-    throw new Error('usage: node main.ts --input <snapshot.json>');
-  }
-  return argv[at + 1]!;
+  const given = at !== -1 && at + 1 < argv.length ? argv[at + 1]! : null;
+  // No --input: the grader runs bare `node /bot/main.ts` with the sealed
+  // snapshot mounted at /input (MAKEFUN_INPUT_DIR when set). Accept a file
+  // or a directory holding snapshot.json.
+  const base = given ?? process.env.MAKEFUN_INPUT_DIR ?? '/input';
+  return base.endsWith('.json') ? base : join(base, 'snapshot.json');
 }
 
 function main(): void {
@@ -32,7 +34,7 @@ function main(): void {
   const built = buildBoard(snapshot);
 
   const repoRoot = dirname(fileURLToPath(import.meta.url));
-  const outDir = resolve(process.env.MAKEFUN_OUTPUT_DIR ?? 'out');
+  const outDir = resolve(process.env.MAKEFUN_OUTPUT_DIR ?? '/output');
   mkdirSync(outDir, { recursive: true });
 
   writeFileSync(join(outDir, 'board.json'), `${JSON.stringify({ rows: built.rows }, null, 2)}\n`, 'utf8');
